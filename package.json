@@ -1,0 +1,18 @@
+{
+  "name": "Karyawan-Backend",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.8",
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^5.1.1",
+    "hono": "^4.7.4",
+    "mongoose": "^8.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1"
+  }
+}
