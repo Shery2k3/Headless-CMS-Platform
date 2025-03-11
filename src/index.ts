@@ -4,9 +4,10 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import 'dotenv/config'
 import colors from 'colors'
-import { connectDB } from './db/index.js'
+import { connectDB } from './config/db/index.js'
 import { errorHandler } from './middleware/error.middleware.js'
 import authRoutes from './routes/auth.routes.js'
+import articleRoutes from "./routes/article.routes.js"
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000
 
@@ -20,6 +21,7 @@ app.use('*', errorHandler)
 
 // Base route
 app.route('/auth', authRoutes)
+app.route('/articles', articleRoutes)
 
 app.get('/', (c) => {
   return c.text('Hello Hono!')
