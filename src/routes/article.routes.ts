@@ -11,8 +11,18 @@ import { validateArticle, validateArticleUpdate } from "../validators/article.va
 
 const router = new Hono();
 
+
 // Public routes
+
+// GET /all - Supports query params:
+// - category: Filter by category
+// - author: Filter by author ID
+// - title: Search in title (case-insensitive)
+// - sort: Sort field (prefix with '-' for descending order, e.g. '-createdAt')
+// - page: Page number (default: 1)
+// - limit: Items per page (default: 10)
 router.get("/all", getAllArticles);
+
 router.get("/get/:id", getArticleById);
 
 // Protected routes

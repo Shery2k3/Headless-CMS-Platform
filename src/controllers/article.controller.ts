@@ -6,8 +6,63 @@ import mongoose from "mongoose";
 // Get all articles (public)
 export const getAllArticles = async (c: Context) => {
   try {
-    const articles = await Article.find().populate("author", "name email");
-    return successResponse(c, 200, "Articles retrieved successfully", articles);
+    const query = c.req.query();
+    
+    // Build filter object
+    const filter: Record<string, any> = {};
+    
+    // Filter by category
+    if (query.category) {
+      filter.category = query.category;
+    }
+    
+    // Filter by author (if provided)
+    if (query.author && mongoose.Types.ObjectId.isValid(query.author)) {
+      filter.author = query.author;
+    }
+    
+    // Filter by title (partial match)
+    if (query.title) {
+      filter.title = { $regex: query.title, $options: 'i' }; // case-insensitive
+    }
+    
+    // Build sort options
+    let sortOptions: Record<string, any> = { createdAt: -1 }; // Default: newest first
+    
+    if (query.sort) {
+      const sortField = query.sort.startsWith('-') ? query.sort.substring(1) : query.sort;
+      const sortOrder = query.sort.startsWith('-') ? -1 : 1;
+      
+      // Only allow sorting by valid fields
+      if (['title', 'createdAt', 'timeToRead', 'category'].includes(sortField)) {
+        sortOptions = { [sortField]: sortOrder };
+      }
+    }
+    
+    // Pagination
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    
+    // Execute query with filters, sorting and pagination
+    const articles = await Article.find(filter)
+      .populate("author", "name email")
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination metadata
+    const total = await Article.countDocuments(filter);
+    
+    return successResponse(c, 200, "Articles retrieved successfully", {
+      articles,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, "Server Error");
