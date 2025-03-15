@@ -18,6 +18,6 @@ const articleSchema = new Schema({
   src: { type: String, },
   videoArticle: { type: Boolean, default: false },
   author: { type: Schema.Types.ObjectId, ref: "User", required: true },
-});
+}, { timestamps: true });
 
 export const Article = model<IArticle>("Article", articleSchema);
