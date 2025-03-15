@@ -8,6 +8,7 @@ import {
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
+import { handleFileUpload } from "../middleware/cloudinary.middleware.js";
 
 const router = new Hono();
 
@@ -26,8 +27,8 @@ router.get("/all", getAllArticles);
 router.get("/get/:id", getArticleById);
 
 // Protected routes
-router.post("/create", auth, validateArticle, createArticle);
-router.patch("/edit/:id", auth, validateArticleUpdate, updateArticle);
+router.post("/create", auth, handleFileUpload,  createArticle);
+router.patch("/edit/:id", auth, handleFileUpload, validateArticleUpdate, updateArticle);
 router.delete("/delete/:id", auth, deleteArticle);
 
 export default router;

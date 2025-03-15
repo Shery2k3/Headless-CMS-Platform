@@ -10,14 +10,16 @@ export interface IArticle extends Document {
   videoArticle?: boolean;
 }
 
-const articleSchema = new Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  timeToRead: { type: String, required: true },
-  category: { type: String, required: true },
-  src: { type: String, },
-  videoArticle: { type: Boolean, default: false },
-  author: { type: Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
+const articleSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    timeToRead: { type: String, required: true },
+    category: { type: String, required: true },
+    src: { type: String },
+    videoArticle: { type: Boolean, default: false },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  }, { timestamps: true }
+);
 
 export const Article = model<IArticle>("Article", articleSchema);
