@@ -246,7 +246,7 @@ export const getTrendingArticles = async (c: Context) => {
 
     const articles = await Article.find({
       createdAt: { $gte: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000) }
-    })
+    }).populate("author", "name email")
       .sort({ timesViewed: -1 })
       .limit(10);
 
