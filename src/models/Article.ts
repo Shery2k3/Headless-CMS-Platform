@@ -8,6 +8,7 @@ export interface IArticle extends Document {
   src?: string;
   author: Types.ObjectId;
   videoArticle?: boolean;
+  timesViewed: number;
 }
 
 const articleSchema = new Schema(
@@ -19,6 +20,7 @@ const articleSchema = new Schema(
     src: { type: String },
     videoArticle: { type: Boolean, default: false },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    timesViewed: { type: Number, default: 0 },
   }, { timestamps: true }
 );
 
