@@ -34,7 +34,7 @@ export const getAllArticles = async (c: Context) => {
       const sortOrder = query.sort.startsWith('-') ? -1 : 1;
       
       // Only allow sorting by valid fields
-      if (['title', 'createdAt', 'timeToRead', 'category'].includes(sortField)) {
+      if (['title', 'createdAt', 'timeToRead', 'category',].includes(sortField)) {
         sortOptions = { [sortField]: sortOrder };
       }
     }
@@ -83,6 +83,9 @@ export const getArticleById = async (c: Context) => {
     if (!article) {
       return errorResponse(c, 404, "Article not found");
     }
+
+    article.timesViewed += 1;
+    await article.save();
     
     return successResponse(c, 200, "Article retrieved successfully", article);
   } catch (error) {
@@ -105,7 +108,7 @@ export const createArticle = async (c: Context) => {
       src,
       author: user._id
     });
-    
+
     return successResponse(c, 201, "Article created successfully", article);
   } catch (error) {
     console.error(error);
