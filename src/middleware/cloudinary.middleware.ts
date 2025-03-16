@@ -3,17 +3,17 @@ import { uploadToCloudinary } from '../config/uploads/index.js';
 
 export const handleFileUpload = async (c: Context, next: Next) => {
   const contentType = c.req.header('content-type') || '';
-  
+
   // Only process as form data if it's multipart
   if (contentType.includes('multipart/form-data')) {
     // Store the original json method
     const originalJson = c.req.json.bind(c.req);
-    
+
     // Override the json method to handle file uploads
     c.req.json = (async <T>() => {
       const formData = await c.req.formData();
       const body: Record<string, any> = {};
-      
+
       // Process all form fields
       for (const [key, value] of formData.entries()) {
         // Handle file uploads
@@ -21,25 +21,26 @@ export const handleFileUpload = async (c: Context, next: Next) => {
           try {
             // Convert File to Buffer
             const buffer = Buffer.from(await value.arrayBuffer());
-            
+
             // Determine resource type based on mimetype
             const resourceType = value.type.startsWith('video/') ? 'video' : 'image';
-            
+
             // Upload to Cloudinary
             const uploadedFile = await uploadToCloudinary(buffer, value.name, {
               resource_type: resourceType as 'image' | 'video' | 'auto'
             });
-            
+
             // Add the URL to the body
             body[key] = uploadedFile.path;
-            
+
             // For article src field, add additional metadata
             if (key === 'src') {
               if (value.type.startsWith('video/')) {
-                const isVideo = true;
-                body.videoArticle = isVideo;
+                body.videoArticle = true;
+              } else {
+                body.videoArticle = false;
               }
-             }
+            }
           } catch (error) {
             console.error('Upload error:', error);
             throw new Error(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -53,11 +54,11 @@ export const handleFileUpload = async (c: Context, next: Next) => {
           }
         }
       }
-      
+
       return body as T;
     }) as typeof c.req.json;
   }
-  
+
   // Continue with the next middleware
   await next();
 };

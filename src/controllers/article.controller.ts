@@ -178,6 +178,7 @@ export const updateArticle = async (c: Context) => {
     }
     if (updates.category !== undefined) updateFields.category = updates.category;
     if (updates.src !== undefined) updateFields.src = updates.src;
+    if (updates.videoArticle !== undefined) updateFields.videoArticle = updates.videoArticle;
 
     // Make sure there's at least one field to update
     if (Object.keys(updateFields).length === 0) {
