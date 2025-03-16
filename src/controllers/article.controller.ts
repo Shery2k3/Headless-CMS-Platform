@@ -109,7 +109,7 @@ export const createArticle = async (c: Context) => {
       title,
       content,
       timeToRead,
-      category,
+      category: category.toLowerCase(),
       src,
       videoArticle,
       author: user._id
@@ -155,7 +155,7 @@ export const updateArticle = async (c: Context) => {
       updateFields.content = updates.content;
       updateFields.timeToRead = calculateReadTime(updates.content);
     }
-    if (updates.category !== undefined) updateFields.category = updates.category;
+    if (updates.category !== undefined) updateFields.category = updates.category.toLowerCase();
     
     //? Delete the old image or video from Cloudinary if the src field is updated
     if (updates.src !== undefined && article.src && updates.src !== article.src) {
