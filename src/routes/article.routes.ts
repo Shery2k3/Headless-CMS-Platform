@@ -31,7 +31,7 @@ router.get("/trending/:days", getTrendingArticles);
 
 // Protected routes
 router.post("/create", auth, handleFileUpload, createArticle);
-router.patch("/edit/:id", auth, handleFileUpload, validateArticleUpdate, updateArticle);
+router.patch("/edit/:id", auth, handleFileUpload, updateArticle);
 router.delete("/delete/:id", auth, deleteArticle);
 
 export default router;

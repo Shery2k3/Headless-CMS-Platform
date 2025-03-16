@@ -3,6 +3,8 @@ import { Article } from "../models/Article.js";
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import mongoose from "mongoose";
 import { time } from "console";
+import { calculateReadTime, extractCloudinaryPublicId, getResourceType } from "../utils/article.util.js";
+import { deleteFromCloudinary } from "../config/uploads/index.js";
 
 // Get all articles (public)
 export const getAllArticles = async (c: Context) => {
@@ -100,21 +102,8 @@ export const createArticle = async (c: Context) => {
   try {
     const user = c.get("user");
     const { title, content, category, src, videoArticle } = await c.req.json();
-    let { timeToRead } = await c.req.json();
 
-    if (!timeToRead) {
-      const readTime = content.split(" ").length / 265;
-      // Round up to the nearest 0.5
-      const roundedTime = Math.ceil(readTime * 2) / 2;
-
-      if (roundedTime <= 1) {
-        timeToRead = "1 min";
-      } else if (roundedTime % 1 === 0) {
-        timeToRead = roundedTime + " mins";
-      } else {
-        timeToRead = roundedTime + " mins";
-      }
-    }
+    const timeToRead = calculateReadTime(content);
 
     const article = await Article.create({
       title,
@@ -164,20 +153,27 @@ export const updateArticle = async (c: Context) => {
     if (updates.title !== undefined) updateFields.title = updates.title;
     if (updates.content !== undefined) {
       updateFields.content = updates.content;
-      const readTime = updates.content.split(" ").length / 265;
-      // Round up to the nearest 0.5
-      const roundedTime = Math.ceil(readTime * 2) / 2;
-
-      if (roundedTime <= 1) {
-        updateFields.timeToRead = "1 min";
-      } else if (roundedTime % 1 === 0) {
-        updateFields.timeToRead = roundedTime + " mins";
-      } else {
-        updateFields.timeToRead = roundedTime + " mins";
-      }
+      updateFields.timeToRead = calculateReadTime(updates.content);
     }
     if (updates.category !== undefined) updateFields.category = updates.category;
-    if (updates.src !== undefined) updateFields.src = updates.src;
+    
+    //? Delete the old image or video from Cloudinary if the src field is updated
+    if (updates.src !== undefined && article.src && updates.src !== article.src) {
+      try {
+        const publicId = extractCloudinaryPublicId(article.src);
+        const resourceType = getResourceType(article.src, article.videoArticle);
+        
+        if (publicId) {
+          await deleteFromCloudinary(publicId, resourceType);
+        }
+      } catch (cloudinaryError) {
+        console.error("Failed to delete from Cloudinary:", cloudinaryError);
+        // Continue with update even if Cloudinary deletion fails
+      }
+      
+      updateFields.src = updates.src;
+    }
+
     if (updates.videoArticle !== undefined) updateFields.videoArticle = updates.videoArticle;
 
     // Make sure there's at least one field to update
@@ -218,6 +214,19 @@ export const deleteArticle = async (c: Context) => {
     // Check if user is the author
     if (article.author.toString() !== user._id.toString()) {
       return errorResponse(c, 403, "You can only delete your own articles");
+    }
+
+    if (article.src) {
+      try {
+        const publicId = extractCloudinaryPublicId(article.src);
+        const resourceType = getResourceType(article.src, article.videoArticle);
+
+        if (publicId) {
+          await deleteFromCloudinary(publicId, resourceType);
+        }
+      } catch (error) {
+        console.error("Failed to delete from Cloudinary:", error);
+      }
     }
 
     await Article.findByIdAndDelete(id);
