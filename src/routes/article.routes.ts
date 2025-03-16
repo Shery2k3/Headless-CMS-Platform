@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { 
+import {
   getAllArticles,
   getArticleById,
   createArticle,
   updateArticle,
-  deleteArticle
+  deleteArticle,
+  getTrendingArticles
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
@@ -26,8 +27,10 @@ router.get("/all", getAllArticles);
 
 router.get("/get/:id", getArticleById);
 
+router.get("/trending/:days", getTrendingArticles);
+
 // Protected routes
-router.post("/create", auth, handleFileUpload,  createArticle);
+router.post("/create", auth, handleFileUpload, createArticle);
 router.patch("/edit/:id", auth, handleFileUpload, validateArticleUpdate, updateArticle);
 router.delete("/delete/:id", auth, deleteArticle);
 
