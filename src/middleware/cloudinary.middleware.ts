@@ -35,8 +35,11 @@ export const handleFileUpload = async (c: Context, next: Next) => {
             
             // For article src field, add additional metadata
             if (key === 'src') {
-              body.videoArticle = resourceType === 'video';
-            }
+              if (value.type.startsWith('video/')) {
+                const isVideo = true;
+                body.videoArticle = isVideo;
+              }
+             }
           } catch (error) {
             console.error('Upload error:', error);
             throw new Error(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

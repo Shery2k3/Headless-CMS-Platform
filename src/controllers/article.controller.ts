@@ -99,7 +99,7 @@ export const getArticleById = async (c: Context) => {
 export const createArticle = async (c: Context) => {
   try {
     const user = c.get("user");
-    const { title, content, category, src } = await c.req.json();
+    const { title, content, category, src, videoArticle } = await c.req.json();
     let { timeToRead } = await c.req.json();
 
     if (!timeToRead) {
@@ -116,14 +116,13 @@ export const createArticle = async (c: Context) => {
       }
     }
 
-    console.log(timeToRead)
-
     const article = await Article.create({
       title,
       content,
       timeToRead,
       category,
       src,
+      videoArticle,
       author: user._id
     });
 
