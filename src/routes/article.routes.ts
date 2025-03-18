@@ -5,7 +5,8 @@ import {
   createArticle,
   updateArticle,
   deleteArticle,
-  getTrendingArticles
+  getTrendingArticles,
+  getYourArticles
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
@@ -33,5 +34,6 @@ router.get("/trending/:days", getTrendingArticles);
 router.post("/create", auth, handleFileUpload, createArticle);
 router.patch("/edit/:id", auth, handleFileUpload, updateArticle);
 router.delete("/delete/:id", auth, deleteArticle);
+router.get("/your", auth, getYourArticles);
 
 export default router;

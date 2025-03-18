@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/error.middleware.js'
 import authRoutes from './routes/auth.routes.js'
 import articleRoutes from "./routes/article.routes.js"
 import commentRoutes from "./routes/comment.routes.js"
+import bookmarkRoutes from "./routes/bookmark.routes.js"
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000
 
@@ -24,6 +25,7 @@ app.use('*', errorHandler)
 app.route('/auth', authRoutes)
 app.route('/articles', articleRoutes)
 app.route('/comments', commentRoutes)
+app.route('/bookmarks', bookmarkRoutes)
 
 app.get('/', (c) => {
   return c.text('Hello Hono!')
