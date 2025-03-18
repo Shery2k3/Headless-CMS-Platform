@@ -79,3 +79,79 @@ export const login = async (c: Context) => {
     return errorResponse(c, 500, "Server Error");
   }
 };
+
+export const updateUserDetails = async (c: Context) => {
+  try {
+    const user = c.get("user");
+    const { firstName, lastName } = await c.req.json();
+
+    // Create update object with only provided fields
+    const updateData: any = { name: {} };
+    
+    if (firstName) {
+      updateData.name.firstName = firstName;
+    }
+    
+    if (lastName) {
+      updateData.name.lastName = lastName;
+    }
+
+    // If neither field was provided
+    if (!firstName && !lastName) {
+      return errorResponse(c, 400, "No update data provided");
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      updateData,
+      { new: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return errorResponse(c, 404, "User not found");
+    }
+
+    return successResponse(
+      c,
+      200,
+      "User details updated successfully",
+      updatedUser
+    );
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+};
+
+export const changePassword = async (c: Context) => {
+  try {
+    const user = c.get("user");
+    const { currentPassword, newPassword } = await c.req.json();
+    
+    // Find user with password field
+    const userWithPassword = await User.findById(user._id);
+    if (!userWithPassword) {
+      return errorResponse(c, 404, "User not found");
+    }
+
+    // Verify current password
+    const isMatch = await userWithPassword.comparePassword(currentPassword);
+    if (!isMatch) {
+      return errorResponse(c, 400, "Current password is incorrect");
+    }
+
+    // Update password
+    userWithPassword.password = newPassword;
+    await userWithPassword.save(); // This will trigger the pre-save hook to hash the password
+
+    return successResponse(
+      c,
+      200,
+      "Password changed successfully"
+    );
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+};
