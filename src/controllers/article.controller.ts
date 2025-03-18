@@ -2,7 +2,6 @@ import type { Context } from "hono";
 import { Article } from "../models/Article.js";
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import mongoose from "mongoose";
-import { time } from "console";
 import { calculateReadTime, extractCloudinaryPublicId, getResourceType } from "../utils/article.util.js";
 import { deleteFromCloudinary } from "../config/uploads/index.js";
 
@@ -96,6 +95,22 @@ export const getArticleById = async (c: Context) => {
     return errorResponse(c, 500, "Server Error");
   }
 };
+
+// Get your articles (protected)
+export const getYourArticles = async (c: Context) => {
+  try {
+    const user = c.get("user");
+
+    const articles = await Article.find({ author: user._id })
+      .populate("author", "name email")
+      .sort({ createdAt: -1 });
+
+    return successResponse(c, 200, "Your articles retrieved successfully", articles);
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+}
 
 // Create new article (protected)
 export const createArticle = async (c: Context) => {
