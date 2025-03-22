@@ -322,3 +322,42 @@ export const getTopCategories = async (c: Context) => {
     return errorResponse(c, 500, "Server Error");
   }
 }
+
+// Get all categories (public)
+export const getAllCategories = async (c: Context) => {
+  try {
+    // Get distinct categories
+    const allCategories = await Article.distinct("category");
+
+    // Aggregate to get category counts and random image for non-video articles
+    const categoriesData = await Article.aggregate([
+      // First match to filter video articles
+      { $match: { videoArticle: false } },
+      {
+        $group: {
+          _id: "$category",
+          count: { $sum: 1 },
+          // Get a random image from non-video articles
+          randomImage: { $first: "$src" }
+        }
+      }
+    ]);
+
+    // Convert to a map for easy lookup
+    const categoryMap = new Map(
+      categoriesData.map(cat => [cat._id, { count: cat.count, image: cat.randomImage }])
+    );
+
+    // Ensure all categories are included, even if they only have video articles
+    const formattedCategories = allCategories.map(category => ({
+      category,
+      count: categoryMap.get(category)?.count || 0,
+      image: categoryMap.get(category)?.image || null
+    }));
+
+    return successResponse(c, 200, "Categories retrieved successfully", formattedCategories);
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+};

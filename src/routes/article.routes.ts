@@ -7,7 +7,8 @@ import {
   deleteArticle,
   getTrendingArticles,
   getYourArticles,
-  getTopCategories
+  getTopCategories,
+  getAllCategories
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
@@ -32,6 +33,7 @@ router.get("/get/:id", getArticleById);
 router.get("/trending/:days", getTrendingArticles);
 
 router.get("/topCategories", getTopCategories);
+router.get("/allCategories", getAllCategories);
 
 // Protected routes
 router.post("/create", auth, handleFileUpload, createArticle);
