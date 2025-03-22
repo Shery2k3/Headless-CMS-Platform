@@ -271,3 +271,54 @@ export const getTrendingArticles = async (c: Context) => {
     return errorResponse(c, 500, "Server Error");
   }
 }
+
+// Get top categories (public)
+export const getTopCategories = async (c: Context) => {
+  try {
+    const query = c.req.query();
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const categories = await Article.aggregate([
+      // First match to filter out video articles
+      { $match: { videoArticle: false } },
+      { $group: { 
+          _id: "$category", 
+          count: { $sum: 1 },
+          articles: { $push: "$$ROOT" }
+      }},
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      { $project: {
+          category: "$_id",
+          count: 1,
+          articles: {
+            $slice: ["$articles", skip, limit]
+          },
+          _id: 0
+      }}
+    ]);
+
+    // Populate author information for articles
+    for (let category of categories) {
+      category.articles = await Article.populate(category.articles, {
+        path: "author",
+        select: "name email"
+      });
+
+      // Add pagination metadata for each category
+      category.pagination = {
+        total: category.count,
+        page,
+        limit,
+        pages: Math.ceil(category.count / limit)
+      };
+    }
+
+    return successResponse(c, 200, "Top categories retrieved successfully", categories);
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+}
