@@ -341,29 +341,63 @@ export const getAllCategories = async (c: Context) => {
     // Get distinct categories
     const allCategories = await Article.distinct("category");
 
-    // Aggregate to get category counts and random image for non-video articles
+    // Aggregate to get category counts and random image
     const categoriesData = await Article.aggregate([
-      // First match to filter video articles
-      { $match: { videoArticle: false } },
       {
         $group: {
           _id: "$category",
-          count: { $sum: 1 },
-          // Get a random image from non-video articles
-          randomImage: { $first: "$src" }
+          articleCount: {
+            $sum: { $cond: [{ $eq: ["$videoArticle", false] }, 1, 0] }
+          },
+          videoCount: {
+            $sum: { $cond: [{ $eq: ["$videoArticle", true] }, 1, 0] }
+          },
+          // Get all images from the category
+          images: {
+            $push: {
+              $cond: [
+                { $ne: ["$src", null] },
+                "$src",
+                "$$REMOVE"
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          articleCount: 1,
+          videoCount: 1,
+          // Pick a random image from the images array
+          randomImage: {
+            $arrayElemAt: [
+              "$images",
+              { $floor: { $multiply: [{ $rand: {} }, { $size: "$images" }] } }
+            ]
+          }
         }
       }
     ]);
 
     // Convert to a map for easy lookup
     const categoryMap = new Map(
-      categoriesData.map(cat => [cat._id, { count: cat.count, image: cat.randomImage }])
+      categoriesData.map(cat => [
+        cat._id,
+        {
+          articleCount: cat.articleCount,
+          videoCount: cat.videoCount,
+          image: cat.randomImage
+        }
+      ])
     );
 
-    // Ensure all categories are included, even if they only have video articles
+    // Ensure all categories are included
     const formattedCategories = allCategories.map(category => ({
       category,
-      count: categoryMap.get(category)?.count || 0,
+      articleCount: categoryMap.get(category)?.articleCount || 0,
+      videoCount: categoryMap.get(category)?.videoCount || 0,
+      totalCount: (categoryMap.get(category)?.articleCount || 0) + (categoryMap.get(category)?.videoCount || 0),
       image: categoryMap.get(category)?.image || null
     }));
 
