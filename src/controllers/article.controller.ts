@@ -28,6 +28,13 @@ export const getAllArticles = async (c: Context) => {
       filter.title = { $regex: query.title, $options: 'i' }; // case-insensitive
     }
 
+    // Video article or not
+    if (query.type === "video") {
+      filter.videoArticle = true;
+    } else if (query.type === "article") {
+      filter.videoArticle = false;
+    }
+
     // Build sort options
     let sortOptions: Record<string, any> = { createdAt: -1 }; // Default: newest first
 
