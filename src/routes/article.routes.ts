@@ -8,7 +8,9 @@ import {
   getTrendingArticles,
   getYourArticles,
   getTopCategories,
-  getAllCategories
+  getAllCategories,
+  getFeaturedArticle,
+  getTopPickArticles
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
@@ -34,6 +36,9 @@ router.get("/trending/:days", getTrendingArticles);
 
 router.get("/topCategories", getTopCategories);
 router.get("/allCategories", getAllCategories);
+
+router.get('/featured-article', getFeaturedArticle);
+router.get('/top-pick-articles', getTopPickArticles);
 
 // Protected routes
 router.post("/create", auth, handleFileUpload, createArticle);
