@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { Article } from "../models/Article.js";
+import { Settings } from "../models/Settings.js";
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import mongoose from "mongoose";
 import { calculateReadTime, extractCloudinaryPublicId, getResourceType } from "../utils/article.util.js";
@@ -178,13 +179,13 @@ export const updateArticle = async (c: Context) => {
       updateFields.timeToRead = calculateReadTime(updates.content);
     }
     if (updates.category !== undefined) updateFields.category = updates.category.toLowerCase();
-    
+
     //? Delete the old image or video from Cloudinary if the src field is updated
     if (updates.src !== undefined && article.src && updates.src !== article.src) {
       try {
         const publicId = extractCloudinaryPublicId(article.src);
         const resourceType = getResourceType(article.src, article.videoArticle);
-        
+
         if (publicId) {
           await deleteFromCloudinary(publicId, resourceType);
         }
@@ -192,7 +193,7 @@ export const updateArticle = async (c: Context) => {
         console.error("Failed to delete from Cloudinary:", cloudinaryError);
         // Continue with update even if Cloudinary deletion fails
       }
-      
+
       updateFields.src = updates.src;
     }
 
@@ -290,21 +291,25 @@ export const getTopCategories = async (c: Context) => {
     const categories = await Article.aggregate([
       // First match to filter out video articles
       { $match: { videoArticle: false } },
-      { $group: { 
-          _id: "$category", 
+      {
+        $group: {
+          _id: "$category",
           count: { $sum: 1 },
           articles: { $push: "$$ROOT" }
-      }},
+        }
+      },
       { $sort: { count: -1 } },
       { $limit: 5 },
-      { $project: {
+      {
+        $project: {
           category: "$_id",
           count: 1,
           articles: {
             $slice: ["$articles", skip, limit]
           },
           _id: 0
-      }}
+        }
+      }
     ]);
 
     // Populate author information for articles
@@ -368,3 +373,23 @@ export const getAllCategories = async (c: Context) => {
     return errorResponse(c, 500, "Server Error");
   }
 };
+
+export const getFeaturedArticle = async (c: Context) => {
+  try {
+    const featuredArticle = await Settings.findOne().select('-topPickArticles').populate("featuredArticle");
+    return successResponse(c, 200, "Featured article retrieved successfully", featuredArticle);
+
+  } catch (error) {
+    return errorResponse(c, 500, "Server Error");
+  }
+}
+
+export const getTopPickArticles = async (c: Context) => {
+  try {
+    const topPickArticles = await Settings.findOne().select('-featuredArticle').populate("topPickArticles");
+    return successResponse(c, 200, "Top pick articles retrieved successfully", topPickArticles);
+
+  } catch (error) {
+    return errorResponse(c, 500, "Server Error");
+  }
+}
