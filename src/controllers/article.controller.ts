@@ -272,7 +272,6 @@ export const getTrendingArticles = async (c: Context) => {
       videoArticle: false
     }).populate("author", "name email")
       .sort({ timesViewed: -1 })
-      .limit(10);
 
     return successResponse(c, 200, "Trending articles retrieved successfully", articles);
   } catch (error) {
