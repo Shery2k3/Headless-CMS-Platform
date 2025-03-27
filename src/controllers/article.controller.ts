@@ -3,7 +3,7 @@ import { Article } from "../models/Article.js";
 import { Settings } from "../models/Settings.js";
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import mongoose from "mongoose";
-import { calculateReadTime, extractCloudinaryPublicId, getResourceType } from "../utils/article.util.js";
+import { calculateReadTime, extractCloudinaryPublicId, extractCloudinaryUrls, getResourceType } from "../utils/article.util.js";
 import { deleteFromCloudinary } from "../config/uploads/index.js";
 import { sanitizeHtml } from "../utils/sanitize.js";
 
@@ -177,7 +177,27 @@ export const updateArticle = async (c: Context) => {
     const updateFields: Record<string, any> = {};
 
     if (updates.title !== undefined) updateFields.title = updates.title;
-    if (updates.content !== undefined) {
+    if (updates.content !== undefined && updates.content !== article.content) {
+      // Clean up deleted images by comparing old and new content
+      const oldImageUrls = extractCloudinaryUrls(article.content);
+      const newImageUrls = extractCloudinaryUrls(updates.content);
+      
+      // Find images that were in the old content but not in the new content
+      const deletedImageUrls = oldImageUrls.filter(url => !newImageUrls.includes(url));
+      
+      // Delete each removed image
+      for (const url of deletedImageUrls) {
+        try {
+          const publicId = extractCloudinaryPublicId(url);
+          if (publicId) {
+            await deleteFromCloudinary(publicId, 'image');
+          }
+        } catch (imgError) {
+          console.error(`Failed to delete removed image (${url}):`, imgError);
+        }
+      }
+      
+      // Update the content field
       updateFields.content = sanitizeHtml(updates.content);
       updateFields.timeToRead = calculateReadTime(updates.content);
     }
@@ -242,6 +262,7 @@ export const deleteArticle = async (c: Context) => {
       return errorResponse(c, 403, "You can only delete your own articles");
     }
 
+    // 1. Delete the main image/video from Cloudinary if it exists
     if (article.src) {
       try {
         const publicId = extractCloudinaryPublicId(article.src);
@@ -251,10 +272,41 @@ export const deleteArticle = async (c: Context) => {
           await deleteFromCloudinary(publicId, resourceType);
         }
       } catch (error) {
-        console.error("Failed to delete from Cloudinary:", error);
+        console.error("Failed to delete main image from Cloudinary:", error);
+        // Continue with deletion even if Cloudinary deletion fails
       }
     }
 
+    // 2. Extract and delete all embedded Cloudinary images from content
+    if (article.content) {
+      try {
+        const imageUrls = extractCloudinaryUrls(article.content);
+
+        // console.log(`Deleting ${imageUrls.length} embedded images...`);
+        
+        // Delete each image from Cloudinary
+        const deletionPromises = imageUrls.map(async (url: string) => {
+          try {
+            const publicId = extractCloudinaryPublicId(url);
+            // console.log(publicId)
+            if (publicId) {
+              // Assume all embedded images are of type 'image'
+              await deleteFromCloudinary(publicId, 'image');
+            }
+          } catch (imgError) {
+            console.error(`Failed to delete embedded image (${url}):`, imgError);
+          }
+        });
+        
+        // Wait for all image deletions to complete
+        await Promise.all(deletionPromises);
+      } catch (contentError) {
+        console.error("Failed to process embedded images:", contentError);
+        // Continue with article deletion even if image cleanup fails
+      }
+    }
+
+    // Delete the article from the database
     await Article.findByIdAndDelete(id);
 
     return successResponse(c, 200, "Article deleted successfully");
