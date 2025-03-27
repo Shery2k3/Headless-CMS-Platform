@@ -10,7 +10,8 @@ import {
   getTopCategories,
   getAllCategories,
   getFeaturedArticle,
-  getTopPickArticles
+  getTopPickArticles,
+  uploadArticleImage
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
@@ -45,5 +46,7 @@ router.post("/create", auth, handleFileUpload, createArticle);
 router.patch("/edit/:id", auth, handleFileUpload, updateArticle);
 router.delete("/delete/:id", auth, deleteArticle);
 router.get("/your", auth, getYourArticles);
+
+router.post('/upload-image', auth, handleFileUpload, uploadArticleImage)
 
 export default router;

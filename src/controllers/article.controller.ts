@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from "../utils/response.util.js";
 import mongoose from "mongoose";
 import { calculateReadTime, extractCloudinaryPublicId, getResourceType } from "../utils/article.util.js";
 import { deleteFromCloudinary } from "../config/uploads/index.js";
+import { sanitizeHtml } from "../utils/sanitize.js";
 
 // Get all articles (public)
 export const getAllArticles = async (c: Context) => {
@@ -127,10 +128,12 @@ export const createArticle = async (c: Context) => {
     const { title, content, category, src, videoArticle } = await c.req.json();
 
     const timeToRead = calculateReadTime(content);
+    
+    const sanitizedContent = sanitizeHtml(content);
 
     const article = await Article.create({
       title,
-      content,
+      content: sanitizedContent,
       timeToRead,
       category: category.toLowerCase(),
       src,
@@ -175,7 +178,7 @@ export const updateArticle = async (c: Context) => {
 
     if (updates.title !== undefined) updateFields.title = updates.title;
     if (updates.content !== undefined) {
-      updateFields.content = updates.content;
+      updateFields.content = sanitizeHtml(updates.content);
       updateFields.timeToRead = calculateReadTime(updates.content);
     }
     if (updates.category !== undefined) updateFields.category = updates.category.toLowerCase();
@@ -423,6 +426,20 @@ export const getTopPickArticles = async (c: Context) => {
     const topPickArticles = await Settings.findOne().select('-featuredArticle').populate("topPickArticles");
     return successResponse(c, 200, "Top pick articles retrieved successfully", topPickArticles);
 
+  } catch (error) {
+    return errorResponse(c, 500, "Server Error");
+  }
+}
+
+export const uploadArticleImage = async (c: Context) => {
+  try {
+    const { image } = await c.req.json();
+
+    if (!image) {
+      return errorResponse(c, 400, "No image provided");
+    }
+
+    return successResponse(c, 200, "Image uploaded successfully", { path: image });
   } catch (error) {
     return errorResponse(c, 500, "Server Error");
   }
