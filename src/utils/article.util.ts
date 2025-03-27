@@ -49,3 +49,27 @@ export const getResourceType = (url: string, isVideo?: boolean): 'image' | 'vide
   const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
   return videoExtensions.some(ext => url.toLowerCase().includes(ext)) ? 'video' : 'image';
 };
+
+/**
+ * Extract all Cloudinary image URLs from HTML content
+ * @param content HTML content
+ * @returns Array of Cloudinary URLs
+ */
+export const extractCloudinaryUrls = (content: string): string[] => {
+  if (!content) return [];
+
+  const cloudinaryDomain = 'res.cloudinary.com';
+  const urls: string[] = [];
+  
+  // Regular expression to match image tags with Cloudinary URLs
+  const imgRegex = /<img[^>]+src=["']([^"']+res\.cloudinary\.com[^"']+)["'][^>]*>/gi;
+  
+  let match;
+  while ((match = imgRegex.exec(content)) !== null) {
+    if (match[1] && match[1].includes(cloudinaryDomain)) {
+      urls.push(match[1]);
+    }
+  }
+  
+  return urls;
+};
