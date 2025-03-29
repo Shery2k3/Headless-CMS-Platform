@@ -257,10 +257,14 @@ export const deleteArticle = async (c: Context) => {
       return errorResponse(c, 404, "Article not found");
     }
 
-    // Check if user is the author
-    if (article.author.toString() !== user._id.toString()) {
-      return errorResponse(c, 403, "You can only delete your own articles");
+    if (!user.admin) {
+      return errorResponse(c, 403, "You are not authorized to delete this article");
     }
+
+    // // Check if user is the author
+    // if (article.author.toString() !== user._id.toString()) {
+    //   return errorResponse(c, 403, "You can only delete your own articles");
+    // }
 
     // 1. Delete the main image/video from Cloudinary if it exists
     if (article.src) {
