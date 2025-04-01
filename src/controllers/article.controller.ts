@@ -327,7 +327,7 @@ export const getTrendingArticles = async (c: Context) => {
     const daysNum = parseInt(days as string) || 7; //? Default to 7 days if parsing fails
 
     const articles = await Article.find({
-      createdAt: { $gte: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000) },
+      updatedAt: { $gte: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000) },
       videoArticle: false
     }).populate("author", "name email")
       .sort({ timesViewed: -1 })
