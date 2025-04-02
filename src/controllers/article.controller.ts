@@ -76,7 +76,7 @@ export const getAllArticles = async (c: Context) => {
     });
   } catch (error) {
     console.error(error);
-    return errorResponse(c, 500, "Server Error");
+    return errorResponse(c, 500, `Server Error - ${error}`);
   }
 };
 
@@ -144,7 +144,7 @@ export const createArticle = async (c: Context) => {
     return successResponse(c, 201, "Article created successfully", article);
   } catch (error) {
     console.error(error);
-    return errorResponse(c, 500, "Server Error");
+    return errorResponse(c, 500, `Server Error - ${error}`);
   }
 };
 
@@ -236,7 +236,7 @@ export const updateArticle = async (c: Context) => {
     return successResponse(c, 200, "Article updated successfully", updatedArticle);
   } catch (error) {
     console.error(error);
-    return errorResponse(c, 500, "Server Error");
+    return errorResponse(c, 500, `Server Error - ${error}`);
   }
 };
 
@@ -316,7 +316,7 @@ export const deleteArticle = async (c: Context) => {
     return successResponse(c, 200, "Article deleted successfully");
   } catch (error) {
     console.error(error);
-    return errorResponse(c, 500, "Server Error");
+    return errorResponse(c, 500, `Server Error - ${error}`);
   }
 };
 
