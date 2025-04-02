@@ -128,7 +128,7 @@ export const createArticle = async (c: Context) => {
     const { title, content, category, src, videoArticle } = await c.req.json();
 
     const timeToRead = calculateReadTime(content);
-    
+
     const sanitizedContent = sanitizeHtml(content);
 
     const article = await Article.create({
@@ -181,10 +181,10 @@ export const updateArticle = async (c: Context) => {
       // Clean up deleted images by comparing old and new content
       const oldImageUrls = extractCloudinaryUrls(article.content);
       const newImageUrls = extractCloudinaryUrls(updates.content);
-      
+
       // Find images that were in the old content but not in the new content
       const deletedImageUrls = oldImageUrls.filter(url => !newImageUrls.includes(url));
-      
+
       // Delete each removed image
       for (const url of deletedImageUrls) {
         try {
@@ -196,7 +196,7 @@ export const updateArticle = async (c: Context) => {
           console.error(`Failed to delete removed image (${url}):`, imgError);
         }
       }
-      
+
       // Update the content field
       updateFields.content = sanitizeHtml(updates.content);
       updateFields.timeToRead = calculateReadTime(updates.content);
@@ -287,7 +287,7 @@ export const deleteArticle = async (c: Context) => {
         const imageUrls = extractCloudinaryUrls(article.content);
 
         // console.log(`Deleting ${imageUrls.length} embedded images...`);
-        
+
         // Delete each image from Cloudinary
         const deletionPromises = imageUrls.map(async (url: string) => {
           try {
@@ -301,7 +301,7 @@ export const deleteArticle = async (c: Context) => {
             console.error(`Failed to delete embedded image (${url}):`, imgError);
           }
         });
-        
+
         // Wait for all image deletions to complete
         await Promise.all(deletionPromises);
       } catch (contentError) {
@@ -469,9 +469,17 @@ export const getAllCategories = async (c: Context) => {
 
 export const getFeaturedArticle = async (c: Context) => {
   try {
-    const featuredArticle = await Settings.findOne().select('-topPickArticles').populate("featuredArticle");
-    return successResponse(c, 200, "Featured article retrieved successfully", featuredArticle);
-
+    const settings = await Settings.findOne()
+      .select('-topPickArticles')
+      .populate({
+        path: "featuredArticle",
+        populate: {
+          path: "author",
+          select: "name email"
+        }
+      });
+    
+    return successResponse(c, 200, "Featured article retrieved successfully", settings);
   } catch (error) {
     return errorResponse(c, 500, "Server Error");
   }
@@ -479,9 +487,17 @@ export const getFeaturedArticle = async (c: Context) => {
 
 export const getTopPickArticles = async (c: Context) => {
   try {
-    const topPickArticles = await Settings.findOne().select('-featuredArticle').populate("topPickArticles");
-    return successResponse(c, 200, "Top pick articles retrieved successfully", topPickArticles);
-
+    const settings = await Settings.findOne()
+      .select('-featuredArticle')
+      .populate({
+        path: "topPickArticles",
+        populate: {
+          path: "author",
+          select: "name email"
+        }
+      });
+    
+    return successResponse(c, 200, "Top pick articles retrieved successfully", settings);
   } catch (error) {
     return errorResponse(c, 500, "Server Error");
   }
