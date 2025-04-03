@@ -16,30 +16,29 @@ export const handleFileUpload = async (c: Context, next: Next) => {
 
       // Process all form fields
       for (const [key, value] of formData.entries()) {
-        // Handle file uploads
-        if (value instanceof File) {
+        // Handle file uploads - check if it's a Blob or has arrayBuffer method instead of checking for File
+        if (value instanceof Blob || (typeof value === 'object' && value !== null && 'arrayBuffer' in value)) {
           try {
-            // Convert File to Buffer
-            const buffer = Buffer.from(await value.arrayBuffer());
-
-            // Determine resource type based on mimetype
-            const resourceType = value.type.startsWith('video/') ? 'video' : 'image';
+            // Convert File/Blob to Buffer
+            const buffer = Buffer.from(await (value as Blob).arrayBuffer());
+            
+            // Determine resource type based on type property (if available) or mimetype
+            const valueType = (value as any).type || '';
+            const resourceType = valueType.startsWith('video/') ? 'video' : 'image';
 
             // Upload to Cloudinary
-            const uploadedFile = await uploadToCloudinary(buffer, value.name, {
-              resource_type: resourceType as 'image' | 'video' | 'auto'
-            });
+            const uploadedFile = await uploadToCloudinary(buffer, 
+              (value as any).name || `upload-${Date.now()}`, 
+              {
+                resource_type: resourceType as 'image' | 'video' | 'auto'
+              });
 
             // Add the URL to the body
             body[key] = uploadedFile.path;
 
             // For article src field, add additional metadata
             if (key === 'src') {
-              if (value.type.startsWith('video/')) {
-                body.videoArticle = true;
-              } else {
-                body.videoArticle = false;
-              }
+              body.videoArticle = valueType.startsWith('video/');
             }
           } catch (error) {
             console.error('Upload error:', error);
