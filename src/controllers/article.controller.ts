@@ -179,9 +179,12 @@ export const updateArticle = async (c: Context) => {
       return errorResponse(c, 404, "Article not found");
     }
 
-    // Check if user is the author
-    if (article.author.toString() !== user._id.toString()) {
-      return errorResponse(c, 403, "You can only update your own articles");
+    if (!user.admin) {
+      return errorResponse(
+        c,
+        403,
+        "You are not authorized to update this article"
+      );
     }
 
     // Get the fields to update (only include fields that are provided)
