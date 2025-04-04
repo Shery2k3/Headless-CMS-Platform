@@ -3,7 +3,12 @@ import { Article } from "../models/Article.js";
 import { Settings } from "../models/Settings.js";
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import mongoose from "mongoose";
-import { calculateReadTime, extractCloudinaryPublicId, extractCloudinaryUrls, getResourceType } from "../utils/article.util.js";
+import {
+  calculateReadTime,
+  extractCloudinaryPublicId,
+  extractCloudinaryUrls,
+  getResourceType,
+} from "../utils/article.util.js";
 import { deleteFromCloudinary } from "../config/uploads/index.js";
 import { sanitizeHtml } from "../utils/sanitize.js";
 
@@ -27,7 +32,7 @@ export const getAllArticles = async (c: Context) => {
 
     // Filter by title (partial match)
     if (query.title) {
-      filter.title = { $regex: query.title, $options: 'i' }; // case-insensitive
+      filter.title = { $regex: query.title, $options: "i" }; // case-insensitive
     }
 
     // Video article or not
@@ -41,11 +46,15 @@ export const getAllArticles = async (c: Context) => {
     let sortOptions: Record<string, any> = { createdAt: -1 }; // Default: newest first
 
     if (query.sort) {
-      const sortField = query.sort.startsWith('-') ? query.sort.substring(1) : query.sort;
-      const sortOrder = query.sort.startsWith('-') ? -1 : 1;
+      const sortField = query.sort.startsWith("-")
+        ? query.sort.substring(1)
+        : query.sort;
+      const sortOrder = query.sort.startsWith("-") ? -1 : 1;
 
       // Only allow sorting by valid fields
-      if (['title', 'createdAt', 'timeToRead', 'category',].includes(sortField)) {
+      if (
+        ["title", "createdAt", "timeToRead", "category"].includes(sortField)
+      ) {
         sortOptions = { [sortField]: sortOrder };
       }
     }
@@ -71,8 +80,8 @@ export const getAllArticles = async (c: Context) => {
         total,
         page,
         limit,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error(error);
@@ -114,12 +123,17 @@ export const getYourArticles = async (c: Context) => {
       .populate("author", "name email")
       .sort({ createdAt: -1 });
 
-    return successResponse(c, 200, "Your articles retrieved successfully", articles);
+    return successResponse(
+      c,
+      200,
+      "Your articles retrieved successfully",
+      articles
+    );
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, "Server Error");
   }
-}
+};
 
 // Create new article (protected)
 export const createArticle = async (c: Context) => {
@@ -138,7 +152,7 @@ export const createArticle = async (c: Context) => {
       category: category.toLowerCase(),
       src,
       videoArticle,
-      author: user._id
+      author: user._id,
     });
 
     return successResponse(c, 201, "Article created successfully", article);
@@ -183,14 +197,16 @@ export const updateArticle = async (c: Context) => {
       const newImageUrls = extractCloudinaryUrls(updates.content);
 
       // Find images that were in the old content but not in the new content
-      const deletedImageUrls = oldImageUrls.filter(url => !newImageUrls.includes(url));
+      const deletedImageUrls = oldImageUrls.filter(
+        (url) => !newImageUrls.includes(url)
+      );
 
       // Delete each removed image
       for (const url of deletedImageUrls) {
         try {
           const publicId = extractCloudinaryPublicId(url);
           if (publicId) {
-            await deleteFromCloudinary(publicId, 'image');
+            await deleteFromCloudinary(publicId, "image");
           }
         } catch (imgError) {
           console.error(`Failed to delete removed image (${url}):`, imgError);
@@ -201,10 +217,15 @@ export const updateArticle = async (c: Context) => {
       updateFields.content = sanitizeHtml(updates.content);
       updateFields.timeToRead = calculateReadTime(updates.content);
     }
-    if (updates.category !== undefined) updateFields.category = updates.category.toLowerCase();
+    if (updates.category !== undefined)
+      updateFields.category = updates.category.toLowerCase();
 
     //? Delete the old image or video from Cloudinary if the src field is updated
-    if (updates.src !== undefined && article.src && updates.src !== article.src) {
+    if (
+      updates.src !== undefined &&
+      article.src &&
+      updates.src !== article.src
+    ) {
       try {
         const publicId = extractCloudinaryPublicId(article.src);
         const resourceType = getResourceType(article.src, article.videoArticle);
@@ -220,20 +241,24 @@ export const updateArticle = async (c: Context) => {
       updateFields.src = updates.src;
     }
 
-    if (updates.videoArticle !== undefined) updateFields.videoArticle = updates.videoArticle;
+    if (updates.videoArticle !== undefined)
+      updateFields.videoArticle = updates.videoArticle;
 
     // Make sure there's at least one field to update
     if (Object.keys(updateFields).length === 0) {
       return errorResponse(c, 400, "No fields provided for update");
     }
 
-    const updatedArticle = await Article.findByIdAndUpdate(
-      id,
-      updateFields,
-      { new: true }
-    );
+    const updatedArticle = await Article.findByIdAndUpdate(id, updateFields, {
+      new: true,
+    });
 
-    return successResponse(c, 200, "Article updated successfully", updatedArticle);
+    return successResponse(
+      c,
+      200,
+      "Article updated successfully",
+      updatedArticle
+    );
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, `Server Error - ${error}`);
@@ -258,7 +283,11 @@ export const deleteArticle = async (c: Context) => {
     }
 
     if (!user.admin) {
-      return errorResponse(c, 403, "You are not authorized to delete this article");
+      return errorResponse(
+        c,
+        403,
+        "You are not authorized to delete this article"
+      );
     }
 
     // // Check if user is the author
@@ -295,10 +324,13 @@ export const deleteArticle = async (c: Context) => {
             // console.log(publicId)
             if (publicId) {
               // Assume all embedded images are of type 'image'
-              await deleteFromCloudinary(publicId, 'image');
+              await deleteFromCloudinary(publicId, "image");
             }
           } catch (imgError) {
-            console.error(`Failed to delete embedded image (${url}):`, imgError);
+            console.error(
+              `Failed to delete embedded image (${url}):`,
+              imgError
+            );
           }
         });
 
@@ -328,16 +360,22 @@ export const getTrendingArticles = async (c: Context) => {
 
     const articles = await Article.find({
       updatedAt: { $gte: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000) },
-      videoArticle: false
-    }).populate("author", "name email")
-      .sort({ timesViewed: -1 })
+      videoArticle: false,
+    })
+      .populate("author", "name email")
+      .sort({ timesViewed: -1 });
 
-    return successResponse(c, 200, "Trending articles retrieved successfully", articles);
+    return successResponse(
+      c,
+      200,
+      "Trending articles retrieved successfully",
+      articles
+    );
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, "Server Error");
   }
-}
+};
 
 // Get top categories (public)
 export const getTopCategories = async (c: Context) => {
@@ -354,8 +392,8 @@ export const getTopCategories = async (c: Context) => {
         $group: {
           _id: "$category",
           count: { $sum: 1 },
-          articles: { $push: "$$ROOT" }
-        }
+          articles: { $push: "$$ROOT" },
+        },
       },
       { $sort: { count: -1 } },
       { $limit: 5 },
@@ -364,18 +402,18 @@ export const getTopCategories = async (c: Context) => {
           category: "$_id",
           count: 1,
           articles: {
-            $slice: ["$articles", skip, limit]
+            $slice: ["$articles", skip, limit],
           },
-          _id: 0
-        }
-      }
+          _id: 0,
+        },
+      },
     ]);
 
     // Populate author information for articles
     for (let category of categories) {
       category.articles = await Article.populate(category.articles, {
         path: "author",
-        select: "name email"
+        select: "name email",
       });
 
       // Add pagination metadata for each category
@@ -383,16 +421,21 @@ export const getTopCategories = async (c: Context) => {
         total: category.count,
         page,
         limit,
-        pages: Math.ceil(category.count / limit)
+        pages: Math.ceil(category.count / limit),
       };
     }
 
-    return successResponse(c, 200, "Top categories retrieved successfully", categories);
+    return successResponse(
+      c,
+      200,
+      "Top categories retrieved successfully",
+      categories
+    );
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, "Server Error");
   }
-}
+};
 
 // Get all categories (public)
 export const getAllCategories = async (c: Context) => {
@@ -406,22 +449,18 @@ export const getAllCategories = async (c: Context) => {
         $group: {
           _id: "$category",
           articleCount: {
-            $sum: { $cond: [{ $eq: ["$videoArticle", false] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ["$videoArticle", false] }, 1, 0] },
           },
           videoCount: {
-            $sum: { $cond: [{ $eq: ["$videoArticle", true] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ["$videoArticle", true] }, 1, 0] },
           },
           // Get all images from the category
           images: {
             $push: {
-              $cond: [
-                { $ne: ["$src", null] },
-                "$src",
-                "$$REMOVE"
-              ]
-            }
-          }
-        }
+              $cond: [{ $ne: ["$src", null] }, "$src", "$$REMOVE"],
+            },
+          },
+        },
       },
       {
         $project: {
@@ -432,35 +471,42 @@ export const getAllCategories = async (c: Context) => {
           randomImage: {
             $arrayElemAt: [
               "$images",
-              { $floor: { $multiply: [{ $rand: {} }, { $size: "$images" }] } }
-            ]
-          }
-        }
-      }
+              { $floor: { $multiply: [{ $rand: {} }, { $size: "$images" }] } },
+            ],
+          },
+        },
+      },
     ]);
 
     // Convert to a map for easy lookup
     const categoryMap = new Map(
-      categoriesData.map(cat => [
+      categoriesData.map((cat) => [
         cat._id,
         {
           articleCount: cat.articleCount,
           videoCount: cat.videoCount,
-          image: cat.randomImage
-        }
+          image: cat.randomImage,
+        },
       ])
     );
 
     // Ensure all categories are included
-    const formattedCategories = allCategories.map(category => ({
+    const formattedCategories = allCategories.map((category) => ({
       category,
       articleCount: categoryMap.get(category)?.articleCount || 0,
       videoCount: categoryMap.get(category)?.videoCount || 0,
-      totalCount: (categoryMap.get(category)?.articleCount || 0) + (categoryMap.get(category)?.videoCount || 0),
-      image: categoryMap.get(category)?.image || null
+      totalCount:
+        (categoryMap.get(category)?.articleCount || 0) +
+        (categoryMap.get(category)?.videoCount || 0),
+      image: categoryMap.get(category)?.image || null,
     }));
 
-    return successResponse(c, 200, "Categories retrieved successfully", formattedCategories);
+    return successResponse(
+      c,
+      200,
+      "Categories retrieved successfully",
+      formattedCategories
+    );
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, "Server Error");
@@ -470,38 +516,48 @@ export const getAllCategories = async (c: Context) => {
 export const getFeaturedArticle = async (c: Context) => {
   try {
     const settings = await Settings.findOne()
-      .select('-topPickArticles')
+      .select("-topPickArticles")
       .populate({
         path: "featuredArticle",
         populate: {
           path: "author",
-          select: "name email"
-        }
+          select: "name email",
+        },
       });
-    
-    return successResponse(c, 200, "Featured article retrieved successfully", settings);
+
+    return successResponse(
+      c,
+      200,
+      "Featured article retrieved successfully",
+      settings
+    );
   } catch (error) {
     return errorResponse(c, 500, "Server Error");
   }
-}
+};
 
 export const getTopPickArticles = async (c: Context) => {
   try {
-    const settings = await Settings.findOne()
-      .select('-featuredArticle')
+    const settings = await Settings.findOne({ videpoArticle: false })
+      .select("-featuredArticle")
       .populate({
         path: "topPickArticles",
         populate: {
           path: "author",
-          select: "name email"
-        }
+          select: "name email",
+        },
       });
-    
-    return successResponse(c, 200, "Top pick articles retrieved successfully", settings);
+
+    return successResponse(
+      c,
+      200,
+      "Top pick articles retrieved successfully",
+      settings
+    );
   } catch (error) {
     return errorResponse(c, 500, "Server Error");
   }
-}
+};
 
 export const uploadArticleImage = async (c: Context) => {
   try {
@@ -511,8 +567,10 @@ export const uploadArticleImage = async (c: Context) => {
       return errorResponse(c, 400, "No image provided");
     }
 
-    return successResponse(c, 200, "Image uploaded successfully", { path: image });
+    return successResponse(c, 200, "Image uploaded successfully", {
+      path: image,
+    });
   } catch (error) {
     return errorResponse(c, 500, "Server Error");
   }
-}
+};
