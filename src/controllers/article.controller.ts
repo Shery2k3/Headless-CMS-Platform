@@ -527,6 +527,7 @@ export const getFeaturedArticle = async (c: Context) => {
       .select("-topPickArticles")
       .populate({
         path: "featuredArticle",
+        match: { videoArticle: false },
         populate: {
           path: "author",
           select: "name email",
@@ -546,10 +547,11 @@ export const getFeaturedArticle = async (c: Context) => {
 
 export const getTopPickArticles = async (c: Context) => {
   try {
-    const settings = await Settings.findOne({ videpoArticle: false })
+    const settings = await Settings.findOne()
       .select("-featuredArticle")
       .populate({
         path: "topPickArticles",
+        match: { videoArticle: false },
         populate: {
           path: "author",
           select: "name email",
