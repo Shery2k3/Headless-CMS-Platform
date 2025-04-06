@@ -35,6 +35,11 @@ export const getAllArticles = async (c: Context) => {
       filter.title = { $regex: query.title, $options: "i" }; // case-insensitive
     }
 
+    // Search term for titles
+    if (query.search) {
+      filter.title = { $regex: query.search, $options: 'i' }; // case-insensitive
+    }
+
     // Video article or not
     if (query.type === "video") {
       filter.videoArticle = true;
