@@ -11,7 +11,8 @@ import {
   getAllCategories,
   getFeaturedArticle,
   getTopPickArticles,
-  uploadArticleImage
+  uploadArticleImage,
+  // migrateData
 } from "../controllers/article.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { validateArticle, validateArticleUpdate } from "../validators/article.validator.js";
@@ -48,5 +49,7 @@ router.delete("/delete/:id", auth, deleteArticle);
 router.get("/your", auth, getYourArticles);
 
 router.post('/upload-image', auth, handleFileUpload, uploadArticleImage)
+
+// router.post("/migrate", migrateData)
 
 export default router;
