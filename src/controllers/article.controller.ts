@@ -11,6 +11,7 @@ import {
 } from "../utils/article.util.js";
 import { deleteFromCloudinary } from "../config/uploads/index.js";
 import { sanitizeHtml } from "../utils/sanitize.js";
+import { auth } from "google-auth-library";
 
 // Get all articles (public)
 export const getAllArticles = async (c: Context) => {
@@ -27,7 +28,7 @@ export const getAllArticles = async (c: Context) => {
 
     // Filter by author (if provided)
     if (query.author && mongoose.Types.ObjectId.isValid(query.author)) {
-      filter.author = query.author;
+      filter.postedBy = query.author;
     }
 
     // Filter by title (partial match)
@@ -144,7 +145,7 @@ export const getYourArticles = async (c: Context) => {
 export const createArticle = async (c: Context) => {
   try {
     const user = c.get("user");
-    const { title, content, category, src, videoArticle } = await c.req.json();
+    const { title, content, category, src, videoArticle, author } = await c.req.json();
 
     const timeToRead = calculateReadTime(content);
 
@@ -157,7 +158,8 @@ export const createArticle = async (c: Context) => {
       category: category.toLowerCase(),
       src,
       videoArticle,
-      author: user._id,
+      postedBy: user._id,
+      author: author || "Anonymous",
     });
 
     return successResponse(c, 201, "Article created successfully", article);
@@ -199,6 +201,7 @@ export const updateArticle = async (c: Context) => {
     const updateFields: Record<string, any> = {};
 
     if (updates.title !== undefined) updateFields.title = updates.title;
+    if (updates.author !== undefined) updateFields.author = updates.author;
     if (updates.content !== undefined && updates.content !== article.content) {
       // Clean up deleted images by comparing old and new content
       const oldImageUrls = extractCloudinaryUrls(article.content);
@@ -584,3 +587,56 @@ export const uploadArticleImage = async (c: Context) => {
     return errorResponse(c, 500, "Server Error");
   }
 };
+
+// const authorNames = [
+//   "Alex Johnson",
+//   "Maya Patel",
+//   "Soren Eriksen",
+//   "Layla Chen",
+//   "Zoe Williams",
+//   "Ravi Kumar",
+//   "Isabella Rodriguez",
+//   "Hiroshi Tanaka",
+//   "Olivia Kim",
+//   "Noah Lefebvre",
+//   "Elena Petrova",
+//   "Jamal Washington",
+//   "Amara Okafor",
+//   "Gabriel Santos",
+//   "Lucas Andersson",
+//   "Mei Lin",
+// ];
+
+// const getRandomAuthor = () => {
+//   const randomIndex = Math.floor(Math.random() * authorNames.length);
+//   return authorNames[randomIndex];
+// };
+
+// export const migrateData = async (c: Context) => {
+//   try {
+//     const articles = await Article.find({})
+//     console.log(`Found ${articles.length} articles to migrate`);
+
+//     let count = 0;
+
+//     for (const article of articles) {
+//       const updates = {
+//         postedBy: article.author,
+//         author: getRandomAuthor(),
+//       }
+
+//       await Article.findByIdAndUpdate(article._id, updates);
+//       count++;
+
+//       if (count % 10 === 0) {
+//         console.log(`Migrated ${count}/${articles.length} articles`);
+//       }
+//     }
+
+//     console.log(`Migration complete. Updated ${count} articles.`);
+
+//   } catch (error) {
+//     console.error(error);
+//     return errorResponse(c, 500, "Server Error");
+//   }
+// }

@@ -6,7 +6,8 @@ export interface IArticle extends Document {
   timeToRead: string;
   category: string;
   src?: string;
-  author: Types.ObjectId;
+  postedBy: Types.ObjectId;
+  author: string;
   videoArticle?: boolean;
   timesViewed: number;
 }
@@ -19,7 +20,8 @@ const articleSchema = new Schema(
     category: { type: String, required: true },
     src: { type: String },
     videoArticle: { type: Boolean, default: false },
-    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    author: { type: String, default: "Anonymous" },
     timesViewed: { type: Number, default: 0 },
   }, { timestamps: true }
 );
