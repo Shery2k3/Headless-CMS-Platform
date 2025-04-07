@@ -72,7 +72,7 @@ export const getAllArticles = async (c: Context) => {
 
     // Execute query with filters, sorting and pagination
     const articles = await Article.find(filter)
-      .populate("author", "name email")
+      .populate("postedBy", "name email")
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);
@@ -104,7 +104,7 @@ export const getArticleById = async (c: Context) => {
       return errorResponse(c, 400, "Invalid article ID");
     }
 
-    const article = await Article.findById(id).populate("author", "name email");
+    const article = await Article.findById(id).populate("postedBy", "name email");
 
     if (!article) {
       return errorResponse(c, 404, "Article not found");
@@ -125,8 +125,8 @@ export const getYourArticles = async (c: Context) => {
   try {
     const user = c.get("user");
 
-    const articles = await Article.find({ author: user._id })
-      .populate("author", "name email")
+    const articles = await Article.find({ postedBy: user._id })
+      .populate("postedBy", "name email")
       .sort({ createdAt: -1 });
 
     return successResponse(
@@ -373,7 +373,7 @@ export const getTrendingArticles = async (c: Context) => {
       updatedAt: { $gte: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000) },
       videoArticle: false,
     })
-      .populate("author", "name email")
+      .populate("postedBy", "name email")
       .sort({ timesViewed: -1 });
 
     return successResponse(
@@ -423,7 +423,7 @@ export const getTopCategories = async (c: Context) => {
     // Populate author information for articles
     for (let category of categories) {
       category.articles = await Article.populate(category.articles, {
-        path: "author",
+        path: "postedBy",
         select: "name email",
       });
 
@@ -532,7 +532,7 @@ export const getFeaturedArticle = async (c: Context) => {
         path: "featuredArticle",
         match: { videoArticle: false },
         populate: {
-          path: "author",
+          path: "postedBy",
           select: "name email",
         },
       });
@@ -556,7 +556,7 @@ export const getTopPickArticles = async (c: Context) => {
         path: "topPickArticles",
         match: { videoArticle: false },
         populate: {
-          path: "author",
+          path: "postedBy",
           select: "name email",
         },
       });
