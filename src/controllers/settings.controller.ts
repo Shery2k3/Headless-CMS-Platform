@@ -30,20 +30,27 @@ export const updateFeaturedArticle = async (c: Context) => {
 
 export const updateTopPickArticles = async (c: Context) => {
   try {
-    const { articleIds } = await c.req.json();
+    const { articleIds, displayOrders } = await c.req.json();
 
     if (!Array.isArray(articleIds)) {
       return errorResponse(c, 400, "Invalid article IDs format");
     }
 
+    // Create array of objects with article ID and display order
+    const topPicksData = articleIds.map((id: string, index: number) => ({
+      article: new mongoose.Types.ObjectId(id),
+      displayOrder: displayOrders ? displayOrders[index] : index + 1
+    }));
+
     const settings = await Settings.findOne();
     if (!settings) {
-      await Settings.create({ topPickArticles: articleIds });
+      // Create new settings document with top pick articles
+      await Settings.create({ topPickArticles: topPicksData });
       return successResponse(c, 200, "Top pick articles changed successfully");
     }
 
-    // Convert the strings to ObjectIds before assignment
-    settings.topPickArticles = articleIds.map((id: string) => new mongoose.Types.ObjectId(id));
+    // Use set method instead of direct assignment to handle the type issues
+    settings.set({ topPickArticles: topPicksData });
     await settings.save();
 
     return successResponse(c, 200, "Top pick articles changed successfully");
