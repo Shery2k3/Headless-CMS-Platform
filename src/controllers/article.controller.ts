@@ -301,11 +301,6 @@ export const deleteArticle = async (c: Context) => {
       );
     }
 
-    // // Check if user is the author
-    // if (article.author.toString() !== user._id.toString()) {
-    //   return errorResponse(c, 403, "You can only delete your own articles");
-    // }
-
     // 1. Delete the main image/video from Cloudinary if it exists
     if (article.src) {
       try {
@@ -326,13 +321,10 @@ export const deleteArticle = async (c: Context) => {
       try {
         const imageUrls = extractCloudinaryUrls(article.content);
 
-        // console.log(`Deleting ${imageUrls.length} embedded images...`);
-
         // Delete each image from Cloudinary
         const deletionPromises = imageUrls.map(async (url: string) => {
           try {
             const publicId = extractCloudinaryPublicId(url);
-            // console.log(publicId)
             if (publicId) {
               // Assume all embedded images are of type 'image'
               await deleteFromCloudinary(publicId, "image");
@@ -353,7 +345,61 @@ export const deleteArticle = async (c: Context) => {
       }
     }
 
-    // Delete the article from the database
+    // 3. Remove the article from Settings if it's a featured article or in top picks
+    try {
+      const settings = await Settings.findOne();
+      
+      if (settings) {
+        let needsUpdate = false;
+        
+        // Check if it's the featured article
+        if (settings.featuredArticle && settings.featuredArticle.toString() === id) {
+          settings.featuredArticle = null;
+          needsUpdate = true;
+        }
+        
+        // Check if it's in top picks
+        if (settings.topPickArticles && settings.topPickArticles.length > 0) {
+          const initialLength = settings.topPickArticles.length;
+          
+          // Find the deleted article's display order (if it exists in top picks)
+          const deletedArticleItem = settings.topPickArticles.find(
+            item => item.article && item.article.toString() === id
+          );
+          const deletedOrder = deletedArticleItem?.displayOrder;
+          
+          // Remove the article from top picks
+          // @ts-ignore
+          settings.topPickArticles = settings.topPickArticles.filter(
+            item => !item.article || item.article.toString() !== id
+          );
+          
+          // If we removed an item and there are remaining items, adjust display orders
+          if (settings.topPickArticles.length < initialLength && settings.topPickArticles.length > 0 && deletedOrder) {
+            // Reduce the display order of all items that had a higher order than the deleted item
+            settings.topPickArticles.forEach(item => {
+              if (item.displayOrder > deletedOrder) {
+                item.displayOrder -= 1;
+              }
+            });
+          }
+          
+          if (initialLength !== settings.topPickArticles.length) {
+            needsUpdate = true;
+          }
+        }
+        
+        // Save settings if changes were made
+        if (needsUpdate) {
+          await settings.save();
+        }
+      }
+    } catch (settingsError) {
+      console.error("Failed to update settings:", settingsError);
+      // Continue with article deletion even if settings update fails
+    }
+
+    // 4. Delete the article from the database
     await Article.findByIdAndDelete(id);
 
     return successResponse(c, 200, "Article deleted successfully");
