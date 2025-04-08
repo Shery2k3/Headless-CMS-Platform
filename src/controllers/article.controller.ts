@@ -553,21 +553,41 @@ export const getTopPickArticles = async (c: Context) => {
     const settings = await Settings.findOne()
       .select("-featuredArticle")
       .populate({
-        path: "topPickArticles",
-        match: { videoArticle: false },
+        path: "topPickArticles.article",
         populate: {
           path: "postedBy",
           select: "name email",
         },
       });
 
+    // Transform the data to maintain the display order
+    let topPickArticles: any[] = [];
+    
+    if (settings && settings.topPickArticles) {
+      // Filter out any null article references (in case articles were deleted)
+      topPickArticles = settings.topPickArticles
+        .filter((item): item is typeof item & { article: any } => 
+          item.article !== null && item.article !== undefined
+        )
+        // Sort by displayOrder
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        // Map to the expected format, adding displayOrder to each article
+        .map(item => {
+          // Now TypeScript knows item.article is not null or undefined
+          const article = item.article.toObject();
+          article.displayOrder = item.displayOrder;
+          return article;
+        });
+    }
+
     return successResponse(
       c,
       200,
       "Top pick articles retrieved successfully",
-      settings
+      { topPickArticles }
     );
   } catch (error) {
+    console.error(error);
     return errorResponse(c, 500, "Server Error");
   }
 };

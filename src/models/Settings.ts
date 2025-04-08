@@ -1,13 +1,20 @@
-import { Document, Schema, model, Types } from 'mongoose';
+import mongoose from "mongoose";
 
-export interface ISettings extends Document {
-  featuredArticle: Types.ObjectId;
-  topPickArticles: Types.ObjectId[];
-}
-
-const SettingsSchema = new Schema({
-  featuredArticle: { type: Schema.Types.ObjectId, ref: 'Article' },
-  topPickArticles: [{ type: Schema.Types.ObjectId, ref: 'Article' }],
+const settingsSchema = new mongoose.Schema({
+  featuredArticle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Article"
+  },
+  topPickArticles: [{
+    article: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Article"
+    },
+    displayOrder: {
+      type: Number,
+      default: 0
+    }
+  }]
 });
 
-export const Settings = model<ISettings>('Settings', SettingsSchema);
+export const Settings = mongoose.model("Settings", settingsSchema);
