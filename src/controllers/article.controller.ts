@@ -608,6 +608,22 @@ export const uploadArticleImage = async (c: Context) => {
   }
 };
 
+export const getDistinctCategories = async (c: Context) => {
+  try {
+    const categories = await Article.distinct("category");
+
+    return successResponse(
+      c,
+      200,
+      "Distinct categories retrieved successfully",
+      categories
+    );
+
+  } catch (error) {
+    return errorResponse(c, 500, "Server Error");
+  }
+}
+
 // const authorNames = [
 //   "Alex Johnson",
 //   "Maya Patel",
