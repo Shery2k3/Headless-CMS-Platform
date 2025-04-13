@@ -76,6 +76,7 @@ export const login = async (c: Context) => {
         name: user.name,
         email: user.email,
         admin: user.admin,
+        superAdmin: user.superAdmin,
         token
       },
     );
