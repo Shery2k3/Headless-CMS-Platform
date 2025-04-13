@@ -1,4 +1,5 @@
 import { Settings } from '../models/Settings.js';
+import { User } from '../models/User.js';
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import type { Context } from 'hono';
 import mongoose from 'mongoose';
@@ -54,6 +55,69 @@ export const updateTopPickArticles = async (c: Context) => {
     await settings.save();
 
     return successResponse(c, 200, "Top pick articles changed successfully");
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+}
+
+export const getAllUsers = async (c: Context) => {
+  try {
+    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+
+    if (!users) {
+      return errorResponse(c, 404, "No users found");
+    }
+    return successResponse(c, 200, "Users retrieved successfully", users);
+
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+}
+
+export const makeAdmin = async (c: Context) => {
+  try {
+    const { userId } = c.req.param();
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return errorResponse(c, 400, "Invalid user ID format");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return errorResponse(c, 404, "User not found");
+    }
+
+    user.admin = true;
+    await user.save();
+
+    return successResponse(c, 200, "User made admin successfully", user);
+
+  } catch (error) {
+    console.error(error);
+    return errorResponse(c, 500, "Server Error");
+  }
+}
+
+export const removeAdmin = async (c: Context) => {
+  try {
+    const { userId } = c.req.param();
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return errorResponse(c, 400, "Invalid user ID format");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return errorResponse(c, 404, "User not found");
+    }
+
+    user.admin = false;
+    await user.save();
+
+    return successResponse(c, 200, "User admin status removed successfully", user);
+
   } catch (error) {
     console.error(error);
     return errorResponse(c, 500, "Server Error");
