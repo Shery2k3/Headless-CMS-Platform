@@ -23,12 +23,12 @@ export const getAllArticles = async (c: Context) => {
 
     // Filter by category
     if (query.category) {
-      filter.category = query.category;
+      filter.category = { $regex: query.category, $options: "i" }; // case-insensitive
     }
 
     // Filter by author (if provided)
     if (query.author && mongoose.Types.ObjectId.isValid(query.author)) {
-      filter.postedBy = query.author;
+      filter.postedBy = query.author; 
     }
 
     // Filter by title (partial match)
