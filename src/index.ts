@@ -11,6 +11,7 @@ import articleRoutes from "./routes/article.routes.js"
 import commentRoutes from "./routes/comment.routes.js"
 import bookmarkRoutes from "./routes/bookmark.routes.js"
 import settingRoutes from './routes/settings.routes.js'
+import contactRoutes from './routes/contact.routes.js'
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000
 
@@ -28,6 +29,7 @@ app.route('/articles', articleRoutes)
 app.route('/comments', commentRoutes)
 app.route('/bookmarks', bookmarkRoutes)
 app.route('/settings', settingRoutes)
+app.route('/contact', contactRoutes)
 
 app.get('/', (c) => {
   return c.text('Hello Hono!')
