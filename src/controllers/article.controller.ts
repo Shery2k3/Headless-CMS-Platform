@@ -248,7 +248,10 @@ export const updateArticle = async (c: Context) => {
         console.error("Failed to delete from Cloudinary:", cloudinaryError);
         // Continue with update even if Cloudinary deletion fails
       }
-
+    }
+    
+    // Always set the src field if it's provided in updates
+    if (updates.src !== undefined) {
       updateFields.src = updates.src;
     }
 
