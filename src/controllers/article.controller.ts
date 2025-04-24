@@ -445,9 +445,18 @@ export const getTopCategories = async (c: Context) => {
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const categories = await Article.aggregate([
-      // First match to filter out video articles
-      { $match: { videoArticle: false } },
+    // Define categories to exclude
+    const excludedCategories = ["book review", "cover story"];
+
+    // Get all categories first, excluding the specified ones
+    const allCategories = await Article.aggregate([
+      // First match to filter out video articles and excluded categories
+      { 
+        $match: { 
+          videoArticle: false,
+          category: { $nin: excludedCategories.map(cat => new RegExp(cat, 'i')) }
+        } 
+      },
       {
         $group: {
           _id: "$category",
@@ -470,7 +479,7 @@ export const getTopCategories = async (c: Context) => {
     ]);
 
     // Populate author information for articles
-    for (let category of categories) {
+    for (let category of allCategories) {
       category.articles = await Article.populate(category.articles, {
         path: "postedBy",
         select: "name email",
@@ -489,7 +498,7 @@ export const getTopCategories = async (c: Context) => {
       c,
       200,
       "Top categories retrieved successfully",
-      categories
+      allCategories
     );
   } catch (error) {
     console.error(error);
@@ -500,11 +509,22 @@ export const getTopCategories = async (c: Context) => {
 // Get all categories (public)
 export const getAllCategories = async (c: Context) => {
   try {
-    // Get distinct categories
-    const allCategories = await Article.distinct("category");
+    // Define categories to exclude
+    const excludedCategories = ["book review", "cover story"];
+    
+    // Get distinct categories, excluding the specified ones
+    const allCategories = await Article.distinct("category", {
+      category: { $nin: excludedCategories.map(cat => new RegExp(cat, 'i')) }
+    });
 
     // Aggregate to get category counts and random image
     const categoriesData = await Article.aggregate([
+      // First match to exclude the specified categories
+      { 
+        $match: { 
+          category: { $nin: excludedCategories.map(cat => new RegExp(cat, 'i')) }
+        } 
+      },
       {
         $group: {
           _id: "$category",
@@ -561,11 +581,16 @@ export const getAllCategories = async (c: Context) => {
       image: categoryMap.get(category)?.image || null,
     }));
 
+    // Sort by total count (descending)
+    const sortedCategories = [...formattedCategories].sort(
+      (a, b) => b.totalCount - a.totalCount
+    );
+
     return successResponse(
       c,
       200,
       "Categories retrieved successfully",
-      formattedCategories
+      sortedCategories
     );
   } catch (error) {
     console.error(error);
