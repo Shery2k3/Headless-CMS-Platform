@@ -34,7 +34,14 @@ interface CloudinaryUploadOptions {
 const defaultOptions: CloudinaryUploadOptions = {
   folder: 'karyawan-articles',
   resource_type: 'auto',
-  allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm']
+  allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm'],
+  // Always convert images to webp and compress
+  transformation: [
+    {
+      fetch_format: 'webp',
+      quality: 'auto'
+    }
+  ]
 };
 
 /**
@@ -48,8 +55,14 @@ export const uploadToCloudinary = async (
   filename: string,
   options: CloudinaryUploadOptions = {}
 ): Promise<UploadedFile> => {
-  // Merge with default options
-  const uploadOptions = { ...defaultOptions, ...options };
+  // Merge with default options, but merge transformation arrays properly
+  const uploadOptions = {
+    ...defaultOptions,
+    ...options,
+    transformation: Array.isArray(options.transformation)
+      ? [...defaultOptions.transformation || [], ...options.transformation]
+      : defaultOptions.transformation
+  };
   
   try {
     return new Promise((resolve, reject) => {
