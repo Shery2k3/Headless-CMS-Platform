@@ -444,6 +444,28 @@ export const getTopCategories = async (c: Context) => {
     const page = parseInt(query.page as string) || 1;
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    
+    // Get sort parameter
+    let sortField = "createdAt";
+    let sortOrder = -1;
+    
+    if (query.sort) {
+      // Parse sort parameter (e.g., "-createdAt", "title")
+      const sortParam = query.sort as string;
+      if (sortParam.startsWith("-")) {
+        sortField = sortParam.substring(1);
+        sortOrder = -1;
+      } else {
+        sortField = sortParam;
+        sortOrder = 1;
+      }
+      
+      // Validate the sort field
+      if (!["title", "createdAt", "timeToRead", "category"].includes(sortField)) {
+        sortField = "createdAt";
+        sortOrder = -1;
+      }
+    }
 
     // Define categories to exclude
     const excludedCategories = ["book review", "cover story"];
@@ -470,9 +492,8 @@ export const getTopCategories = async (c: Context) => {
         $project: {
           category: "$_id",
           count: 1,
-          articles: {
-            $slice: ["$articles", skip, limit],
-          },
+          // Don't slice here, we'll sort and slice in memory after populating
+          articles: "$articles",
           _id: 0,
         },
       },
@@ -484,6 +505,20 @@ export const getTopCategories = async (c: Context) => {
         path: "postedBy",
         select: "name email",
       });
+      
+      // Sort the articles based on the requested sort parameter
+      category.articles.sort((a: any, b: any) => {
+        if (typeof a[sortField] === 'string' && typeof b[sortField] === 'string') {
+          return sortOrder * a[sortField].localeCompare(b[sortField]);
+        } else {
+          if (a[sortField] < b[sortField]) return -1 * sortOrder;
+          if (a[sortField] > b[sortField]) return 1 * sortOrder;
+          return 0;
+        }
+      });
+      
+      // Apply pagination after sorting
+      category.articles = category.articles.slice(skip, skip + limit);
 
       // Add pagination metadata for each category
       category.pagination = {
