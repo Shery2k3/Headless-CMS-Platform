@@ -36,9 +36,13 @@ export const getAllArticles = async (c: Context) => {
       filter.title = { $regex: query.title, $options: "i" }; // case-insensitive
     }
 
-    // Search term for titles
+    // Search term for titles and author names
     if (query.search) {
-      filter.title = { $regex: query.search, $options: 'i' }; // case-insensitive
+      // Search in multiple fields (title and author)
+      filter.$or = [
+        { title: { $regex: query.search, $options: 'i' } },
+        { author: { $regex: query.search, $options: 'i' } }
+      ];
     }
 
     // Video article or not
@@ -49,8 +53,7 @@ export const getAllArticles = async (c: Context) => {
     }
 
     // Build sort options
-    let sortOptions: Record<string, any> = { createdAt: -1 }; // Default: newest first
-
+    let sortOptions: Record<string, any> = { createdAt: -1 };
     if (query.sort) {
       const sortField = query.sort.startsWith("-")
         ? query.sort.substring(1)
