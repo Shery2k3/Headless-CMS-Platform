@@ -418,15 +418,38 @@ export const deleteArticle = async (c: Context) => {
 // Get trending artcles given days (public)
 export const getTrendingArticles = async (c: Context) => {
   try {
-    const { days } = c.req.query();
-    const daysNum = parseInt(days as string) || 7; //? Default to 7 days if parsing fails
-
-    const articles = await Article.find({
-      updatedAt: { $gte: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000) },
-      videoArticle: false,
-    })
-      .populate("postedBy", "name email")
-      .sort({ timesViewed: -1 });
+    // Parse query parameters
+    const query = c.req.query();
+    const days = query.days ? parseInt(query.days as string) : 7; // Default to 7 days
+    const limit = query.limit ? parseInt(query.limit as string) : 20; // Default limit to 20 articles
+    
+    // Calculate the date threshold (N days ago)
+    const dateThreshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    // Create an efficient query with proper projection
+    const articles = await Article.find(
+      {
+        updatedAt: { $gte: dateThreshold },
+        videoArticle: false,
+      },
+      {
+        // Project only necessary fields to reduce payload size
+        title: 1,
+        category: 1,
+        author: 1,
+        postedBy: 1,
+        timesViewed: 1,
+        timeToRead: 1,
+        src: 1,
+        createdAt: 1,
+        updatedAt: 1
+        // content field is excluded to reduce payload size
+      }
+    )
+      .populate("postedBy", "name email") // Keep the populate but with minimal fields
+      .sort({ timesViewed: -1 })
+      .limit(limit); // Add a limit to avoid returning too many documents
+      // Removed the .hint() call since it was causing errors
 
     return successResponse(
       c,
