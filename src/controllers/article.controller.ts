@@ -570,6 +570,10 @@ export const getTopCategories = async (c: Context) => {
 // Get all categories (public)
 export const getAllCategories = async (c: Context) => {
   try {
+    const query = c.req.query();
+    // Allow limiting results with a query parameter, default to top 5
+    const limit = parseInt(query.limit as string) || 5;
+    
     // Define categories to exclude
     const excludedCategories = ["book review", "cover story"];
     
@@ -643,9 +647,10 @@ export const getAllCategories = async (c: Context) => {
     }));
 
     // Sort by total count (descending)
-    const sortedCategories = [...formattedCategories].sort(
-      (a, b) => b.totalCount - a.totalCount
-    );
+    const sortedCategories = [...formattedCategories]
+      .sort((a, b) => b.totalCount - a.totalCount)
+      // Limit to the specified number (default 5) directly in the backend
+      .slice(0, limit);
 
     return successResponse(
       c,
