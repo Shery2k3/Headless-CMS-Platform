@@ -571,9 +571,8 @@ export const getTopCategories = async (c: Context) => {
 export const getAllCategories = async (c: Context) => {
   try {
     const query = c.req.query();
-    // Allow limiting results with a query parameter, default to top 5
-    const limit = parseInt(query.limit as string) || 5;
-    
+    // If limit is not provided, use MAX_SAFE_INTEGER to get all categories
+    const limit = query.limit ? parseInt(query.limit as string) : Number.MAX_SAFE_INTEGER;    
     // Define categories to exclude
     const excludedCategories = ["book review", "cover story"];
     
