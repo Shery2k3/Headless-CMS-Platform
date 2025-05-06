@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
-import { emailService } from '../utils/email.util.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
+import { emailService } from '../utils/email.util.js';
 
 /**
  * Controller handling contact-related routes
@@ -18,22 +18,22 @@ export class ContactController {
 
       // Validate required fields
       if (!name || !email || !subject || !message) {
-        return successResponse(c, 200, 'Please provide all required fields: name, email, subject, and message');
+        return errorResponse(c, 400, 'Please provide all required fields: name, email, subject, and message');
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return errorResponse(c, 404, 'Please provide a valid email address');
+        return errorResponse(c, 400, 'Please provide a valid email address');
       }
 
-      // Send the contact form email
+      // Send the email
       await emailService.sendContactFormEmail(name, email, phone, subject, message);
 
       return successResponse(c, 200, 'Your message has been sent successfully!');
     } catch (error) {
       console.error('Contact form submission error:', error);
-      return errorResponse(c, 400, 'Failed to send your message. Please try again later.');
+      return errorResponse(c, 500, 'Failed to send your message. Please try again later.');
     }
   }
 
@@ -58,13 +58,13 @@ export class ContactController {
         return errorResponse(c, 400, 'Please provide a valid email address');
       }
 
-      // Send the contribution form email
+      // Send the email
       await emailService.sendContributionFormEmail(name, email, idea);
 
       return successResponse(c, 200, 'Your pitch has been submitted successfully!');
     } catch (error) {
       console.error('Contribution form submission error:', error);
-      return errorResponse(c, 400, 'Failed to submit your pitch. Please try again later.');
+      return errorResponse(c, 500, 'Failed to submit your pitch. Please try again later.');
     }
   }
 }

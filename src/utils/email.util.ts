@@ -14,7 +14,7 @@ class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Create a transporter with the email configuration
+    // Create a transporter with Gmail configuration
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -82,7 +82,7 @@ class EmailService {
     `;
 
     return this.sendEmail({
-      to: (process.env.EMAIL_RECIPIENT || process.env.EMAIL_SENDE) as string,
+      to: process.env.MAILCHIMP_EMAIL || 'karyawan@amp.org.sg', // Send to Mailchimp email
       subject: `Contact Form: ${subject}`,
       text: textContent,
       html: htmlContent,
@@ -117,7 +117,7 @@ class EmailService {
     `;
 
     return this.sendEmail({
-      to: (process.env.EMAIL_RECIPIENT || process.env.EMAIL_SENDER) as string,
+      to: process.env.MAILCHIMP_EMAIL || 'karyawan@amp.org.sg', // Send to Mailchimp email
       subject: 'New Writing Contribution Submission',
       text: textContent,
       html: htmlContent,
