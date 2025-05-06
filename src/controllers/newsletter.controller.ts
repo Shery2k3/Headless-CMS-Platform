@@ -12,10 +12,13 @@ export const subscribeToNewsletter = async (c: Context) => {
   const { email } = await c.req.json();
 
   if (!email) {
-    return c.json({
-      success: false,
-      message: 'Email is required'
-    }, 400);
+    return errorResponse(c, 400, "Email is required");
+  }
+
+  // Basic email validation on server side
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return errorResponse(c, 400, "Please enter a valid email address");
   }
 
   try {
@@ -25,27 +28,32 @@ export const subscribeToNewsletter = async (c: Context) => {
       {
         email_address: email,
         status: 'subscribed', // Use 'pending' if you want double opt-in
-        // You can add additional fields like this:
-        // merge_fields: {
-        //   FNAME: firstName,
-        //   LNAME: lastName,
-        // }
+        merge_fields: {
+          FNAME: "Subscriber" // Default value for required FNAME field
+        }
       }
     );
 
     return successResponse(
       c,
       200,
-      'Successfully subscribed to the newsletter',
-    )
+      'Successfully subscribed to the newsletter'
+    );
   } catch (error: any) {
     console.error('Mailchimp subscription error:', error);
 
     // Handle existing subscribers gracefully
-    if (error.response && error.response.body && error.response.body.title === 'Member Exists') {
-      return errorResponse(c, 401, "Member Exists");
+    if (error.response?.body?.title === 'Member Exists') {
+      return successResponse(c, 200, "You are already subscribed to our newsletter");
     }
-
-    return errorResponse(c, 500, "Failed to subscribe");
+    
+    // Handle fake/invalid email errors from Mailchimp
+    if (error.response?.body?.detail?.includes('looks fake or invalid')) {
+      return errorResponse(c, 400, "This email appears to be invalid. Please use a different email address.");
+    }
+    
+    // Handle other Mailchimp errors
+    const errorMessage = error.response?.body?.detail || "Failed to subscribe";
+    return errorResponse(c, 500, errorMessage);
   }
 };
