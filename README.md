@@ -29,3 +29,4 @@ A robust Node.js backend built with TypeScript and Hono framework for managing a
 - **Media Upload**: Automatic image optimization and video processing
 - **Comment System**: Nested comments with user attribution
 - **Error Handling**: Comprehensive error management and logging
+
